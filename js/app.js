@@ -52,7 +52,7 @@ const STEP_TITLE = { 1: 'Primer correo', 2: 'Seguimiento 1', 3: 'Seguimiento 2' 
 const STEP_NOTE = { 1: 'sale primero', 2: 'unos días después, si no responde', 3: 'el último, una semana más tarde' };
 
 const RESEARCH = {
-  pending: 'En cola para investigar', researching: 'Investigando', done: 'Ficha completa', unreachable: 'Web inaccesible',
+  pending: 'En cola, esperando su turno', researching: 'Investigando', done: 'Ficha completa', unreachable: 'Web inaccesible',
   insufficient_info: 'Información insuficiente', low_fit: 'No es un estudio de arquitectura', no_valid_email: 'Sin correo válido',
   failed: 'Falló la investigación', excluded: 'Excluido', duplicate: 'Duplicado', no_website: 'Sin web',
 };
@@ -366,7 +366,7 @@ function addScreen() {
     'section',
     {},
     h('h2', {}, 'Añadir estudios'),
-    h('p', { class: 'muted' }, 'Pega la web de cada estudio, una por línea. El sistema rellena la ficha, busca a quién escribir y te deja los correos aquí para aprobarlos.'),
+    h('p', { class: 'muted' }, 'Pega la web de cada estudio, una por línea. Puedes añadir todos los que quieras: cada día laborable el sistema coge 10 de la cola, por orden de llegada, rellena su ficha, busca a quién escribir y te deja los correos aquí para aprobarlos. Los demás esperan su turno.'),
     box,
     h(
       'button',
