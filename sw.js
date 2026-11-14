@@ -1,8 +1,8 @@
 // Keeps a copy of the panel's own files so it opens instantly and survives a poor connection.
 // It always tries the network first, so a new version of the panel is picked up as soon as it is published.
 // Requests to Supabase are never stored: the emails and studios always come fresh from the database.
-const CACHE = 'automail-panel-v3';
-const SHELL = ['./', 'index.html', 'styles.css', 'config.js', 'js/app.js', 'js/data.js', 'js/demo.js', 'vendor/supabase.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/logo.png'];
+const CACHE = 'automail-panel-v4';
+const SHELL = ['./', 'index.html', 'styles.css', 'config.js', 'js/app.js', 'js/data.js', 'js/demo.js', 'vendor/supabase.js', 'manifest.webmanifest', 'icons/favicon-32.png', 'icons/favicon-48.png', 'icons/logo.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
