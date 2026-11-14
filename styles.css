@@ -94,7 +94,7 @@ label input { margin-top: 6px; font-size: 16px; color: var(--text); }
    The picture has an empty margin of about 3.5% of its width on each side; the negative margin lines the
    letters up with the text below. */
 .logo {
-  --logo-width: 190px;
+  --logo-width: 120px;
   display: block;
   width: var(--logo-width);
   aspect-ratio: 870 / 200;
@@ -103,13 +103,13 @@ label input { margin-top: 6px; font-size: 16px; color: var(--text); }
   -webkit-mask: url(icons/logo.png) center / contain no-repeat;
   mask: url(icons/logo.png) center / contain no-repeat;
 }
-.logo.small { --logo-width: 96px; flex: none; }
+.logo.small { --logo-width: 72px; flex: none; }
 
 /* Sign-in */
 .login { max-width: 380px; margin: 0 auto; padding-top: 18vh; }
 .login h1 { margin-bottom: 4px; }
 .login p { margin-bottom: 28px; }
-.login .tagline { margin-top: 2px; letter-spacing: 0.02em; }
+.login .tagline { margin-top: 6px; font-size: 14px; letter-spacing: 0.02em; }
 .login button { width: 100%; margin-top: 6px; }
 
 /* Top bar and bottom tabs */
