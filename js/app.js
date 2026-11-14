@@ -162,6 +162,11 @@ function discard(sequence) {
 
 // --- Screens ---------------------------------------------------------------------------------
 
+/** The wordmark. It is drawn in the text colour, so it shows on both the light and the dark theme. */
+function logo(size = '') {
+  return h('span', { class: `logo ${size}`, role: 'img', 'aria-label': 'Pospo' });
+}
+
 function loginScreen() {
   const email = h('input', { type: 'email', autocomplete: 'username', required: true, placeholder: 'tu@correo.com' });
   const password = h('input', { type: 'password', autocomplete: 'current-password', required: true });
@@ -177,8 +182,8 @@ function loginScreen() {
         });
       },
     },
-    h('h1', {}, 'Automail'),
-    h('p', { class: 'muted' }, 'Panel de aprobación de correos'),
+    logo(),
+    h('p', { class: 'muted tagline' }, 'Email Marketing Platform'),
     h('label', {}, 'Correo', email),
     h('label', {}, 'Contraseña', password),
     h('button', { class: 'primary', disabled: state.busy }, state.busy ? 'Entrando…' : 'Entrar'),
@@ -423,7 +428,7 @@ function render() {
     h(
       'header',
       { class: 'top' },
-      h('strong', {}, 'Automail'),
+      logo('small'),
       api.demo ? h('span', { class: 'chip warn' }, 'Demostración: datos de ejemplo') : null,
       h('button', { class: 'link', onclick: () => run(async () => { await api.signOut(); state.user = null; }) }, 'Salir'),
     ),

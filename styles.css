@@ -90,10 +90,26 @@ textarea.request { min-height: 110px; margin-bottom: 12px; }
 label { display: block; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
 label input { margin-top: 6px; font-size: 16px; color: var(--text); }
 
+/* The wordmark is used as a stencil and filled with the text colour, so it reads on light and dark alike.
+   The picture has an empty margin of about 3.5% of its width on each side; the negative margin lines the
+   letters up with the text below. */
+.logo {
+  --logo-width: 190px;
+  display: block;
+  width: var(--logo-width);
+  aspect-ratio: 870 / 200;
+  margin-left: calc(var(--logo-width) * -0.036);
+  background-color: var(--text);
+  -webkit-mask: url(icons/logo.png) center / contain no-repeat;
+  mask: url(icons/logo.png) center / contain no-repeat;
+}
+.logo.small { --logo-width: 96px; flex: none; }
+
 /* Sign-in */
 .login { max-width: 380px; margin: 0 auto; padding-top: 18vh; }
 .login h1 { margin-bottom: 4px; }
 .login p { margin-bottom: 28px; }
+.login .tagline { margin-top: 2px; letter-spacing: 0.02em; }
 .login button { width: 100%; margin-top: 6px; }
 
 /* Top bar and bottom tabs */
