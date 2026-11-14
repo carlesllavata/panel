@@ -2,6 +2,8 @@
 // for testing, in Node. What they are allowed to do is decided by the database, not here.
 
 const OPEN = ['pending_approval', 'approved'];
+/** What the panel shows of a sequence: what is still to go out, and what already went. */
+const SHOWN = [...OPEN, 'sent'];
 
 /** "https://www.Estudio.es/contacto" -> "estudio.es", the way the database derives a studio's domain. */
 export function domainOf(website) {
@@ -36,6 +38,9 @@ export function groupSequences(rows) {
         verdict: report.verdict ?? 'ok',
         studioFact: report.studio_fact ?? '',
         rewrittenBecause: report.rewritten_because ?? [],
+        /** "queued" until the first email goes out, "active" after that. */
+        status: enrollment.status,
+        nextSendAt: enrollment.next_send_at ?? null,
         messages: [],
       };
       byEnrollment.set(row.enrollment_id, sequence);
@@ -46,6 +51,7 @@ export function groupSequences(rows) {
       id: row.id,
       step: row.step,
       status: row.status,
+      sentAt: row.sent_at ?? null,
       body: row.body,
       translation: row.review_translation ?? '',
       project: row.portfolio_items ?? null,
@@ -56,8 +62,10 @@ export function groupSequences(rows) {
   for (const sequence of sequences) {
     sequence.messages.sort((a, b) => a.step - b.step);
     sequence.pending = sequence.messages.some((message) => message.status === 'pending_approval');
+    sequence.sent = sequence.messages.filter((message) => message.status === 'sent').length;
   }
-  return sequences;
+  // A sequence with nothing left to approve or send is finished and is not shown.
+  return sequences.filter((sequence) => sequence.messages.some((message) => OPEN.includes(message.status)));
 }
 
 export function supabaseApi(client) {
@@ -89,11 +97,11 @@ export function supabaseApi(client) {
       const { data, error } = await client
         .from('messages')
         .select(
-          'id, enrollment_id, step, status, subject, body, review_translation, language, qa_report, ' +
+          'id, enrollment_id, step, status, sent_at, subject, body, review_translation, language, qa_report, ' +
             'portfolio_items(title, url), ' +
-            'enrollments!inner(email, status, studios(id, name, website, city, country), contacts(full_name, role, role_category))',
+            'enrollments!inner(email, status, next_send_at, studios(id, name, website, city, country), contacts(full_name, role, role_category))',
         )
-        .in('status', OPEN)
+        .in('status', SHOWN)
         .in('enrollments.status', ['queued', 'active'])
         .order('enrollment_id')
         .order('step');
@@ -142,6 +150,17 @@ export function supabaseApi(client) {
         .eq('enrollment_id', enrollmentId)
         .in('status', OPEN);
       fail('No se pudo pedir otra versión', error);
+    },
+
+    /** The studio answered: whatever was still to go out is withdrawn and the sequence ends. */
+    async markReplied(enrollmentId) {
+      const { error } = await client.from('messages').update({ status: 'superseded' }).eq('enrollment_id', enrollmentId).in('status', OPEN);
+      fail('No se pudo marcar la respuesta', error);
+      const { error: enrollmentError } = await client
+        .from('enrollments')
+        .update({ status: 'replied', status_detail: 'marcado en el panel', updated_at: new Date().toISOString() })
+        .eq('id', enrollmentId);
+      fail('No se pudo marcar la respuesta', enrollmentError);
     },
 
     /** Drops the studio: its emails are rejected and nothing will be sent to it. */

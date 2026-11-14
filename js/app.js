@@ -48,6 +48,8 @@ const countryName = (code) => { try { return countryNames.of(code) ?? code; } ca
 const domain = (website) => (website ?? '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
 const words = (text) => text.replace(/\bhttps?:\/\/\S+/g, ' ').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
 
+const shortDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+
 const STEP_TITLE = { 1: 'Primer correo', 2: 'Seguimiento 1', 3: 'Seguimiento 2' };
 const STEP_NOTE = { 1: 'sale primero', 2: 'unos días después, si no responde', 3: 'el último, una semana más tarde' };
 
@@ -151,8 +153,18 @@ function requestNewVersion(sequence, text) {
   }, 'Petición enviada: se redactará otra versión');
 }
 
+function markReplied(sequence) {
+  if (!confirm(`¿Marcar que ${sequence.studio.name ?? 'este estudio'} ha respondido? No se le enviarán los correos que quedan.`)) return;
+  run(async () => {
+    await api.markReplied(sequence.enrollmentId);
+    closeSequence();
+    await loadSequences();
+  }, 'Marcado como respondido');
+}
+
 function discard(sequence) {
-  if (!confirm(`¿Descartar ${sequence.studio.name ?? 'este estudio'}? No se le enviará ningún correo.`)) return;
+  const question = sequence.sent > 0 ? 'No se le enviarán los correos que quedan.' : 'No se le enviará ningún correo.';
+  if (!confirm(`¿Descartar ${sequence.studio.name ?? 'este estudio'}? ${question}`)) return;
   run(async () => {
     await api.discard(sequence.enrollmentId);
     closeSequence();
@@ -224,7 +236,13 @@ function sequenceCard(sequence) {
       { class: 'chips' },
       h('span', { class: 'chip' }, languageName(sequence.language ?? 'es')),
       sequence.verdict === 'review' ? h('span', { class: 'chip warn' }, 'Con avisos') : null,
-      h('span', { class: `chip ${approved === sequence.messages.length ? 'good' : ''}` }, `${approved} de ${sequence.messages.length} aprobados`),
+      sequence.sent > 0 ? h('span', { class: 'chip good' }, `${sequence.sent} de ${sequence.messages.length} enviados`) : null,
+      approved + sequence.sent < sequence.messages.length
+        ? h('span', { class: 'chip' }, `${sequence.messages.length - approved - sequence.sent} por aprobar`)
+        : sequence.sent === 0
+          ? h('span', { class: 'chip good' }, 'Todo aprobado')
+          : null,
+      sequence.nextSendAt ? h('span', { class: 'chip' }, `Siguiente: ${shortDate(sequence.nextSendAt)}`) : null,
     ),
   );
 }
@@ -237,7 +255,7 @@ function queueScreen() {
     {},
     h('h2', {}, 'Por aprobar'),
     pending.length === 0 ? h('p', { class: 'empty' }, 'No hay correos esperando tu aprobación.') : pending.map(sequenceCard),
-    waiting.length > 0 ? h('h2', {}, 'Aprobados, a la espera de envío') : null,
+    waiting.length > 0 ? h('h2', {}, 'Aprobados: saliendo o esperando su día') : null,
     waiting.map(sequenceCard),
   );
 }
@@ -262,6 +280,15 @@ function emailCard(sequence, message) {
     },
   });
   const approved = message.status === 'approved';
+  if (message.status === 'sent') {
+    // An email that already went out is shown as it was sent and cannot be changed.
+    return h(
+      'article',
+      { class: 'email sent' },
+      h('header', {}, h('h3', {}, STEP_TITLE[message.step] ?? `Correo ${message.step}`), h('span', { class: 'chip good' }, `Enviado el ${shortDate(message.sentAt)}`)),
+      h('p', { class: 'translation' }, message.body),
+    );
+  }
   return h(
     'article',
     { class: `email ${approved ? 'approved' : ''}` },
@@ -325,11 +352,13 @@ function sequenceScreen(sequence) {
       { class: 'actions' },
       pending.length > 1 ? h('button', { class: 'primary', disabled: state.busy, onclick: () => approve(sequence, pending) }, `Aprobar los ${pending.length} pendientes`) : null,
       h('button', { disabled: state.busy, onclick: () => saveOnly(sequence) }, 'Guardar cambios sin aprobar'),
-      h('button', { disabled: state.busy, onclick: () => { state.asking = !state.asking; render(); } }, 'Pedir otra versión'),
+      sequence.sent > 0 ? h('button', { class: 'primary', disabled: state.busy, onclick: () => markReplied(sequence) }, 'Ha respondido') : null,
+      // Once the first email has gone out the sequence is not rewritten: what is left can be edited by hand.
+      sequence.sent > 0 ? null : h('button', { disabled: state.busy, onclick: () => { state.asking = !state.asking; render(); } }, 'Pedir otra versión'),
       state.asking
         ? h('div', { class: 'asking' }, h('p', { class: 'muted small' }, 'Los tres correos se retiran y se redactan de nuevo siguiendo lo que pidas.'), request, h('button', { class: 'primary', disabled: state.busy, onclick: () => requestNewVersion(sequence, request.value) }, 'Enviar petición'))
         : null,
-      h('button', { class: 'danger', disabled: state.busy, onclick: () => discard(sequence) }, 'Descartar este estudio'),
+      h('button', { class: 'danger', disabled: state.busy, onclick: () => discard(sequence) }, sequence.sent > 0 ? 'Parar esta secuencia' : 'Descartar este estudio'),
     ),
   );
 }

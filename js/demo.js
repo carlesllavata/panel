@@ -14,6 +14,9 @@ function sequence(enrollmentId, studio, recipient, language, subject, studioFact
     verdict,
     studioFact,
     rewrittenBecause: [],
+    status: 'queued',
+    nextSendAt: null,
+    sent: 0,
     pending: true,
     messages: emails.map((email, index) => ({
       id: enrollmentId * 10 + index + 1,
@@ -83,10 +86,49 @@ function sampleSequences() {
   ];
 }
 
+/** A third example: the first email has gone out and the follow-ups are approved, waiting for their day. */
+function inProgress() {
+  const example = sequence(
+    3,
+    { id: 4, name: 'Studio Esempio', website: 'https://studioesempio.it', city: 'Milano', country: 'IT' },
+    { email: 'davide@studioesempio.it', name: 'Davide Rossi', role: 'Socio' },
+    'it',
+    'Visualizzazioni per i vostri progetti',
+    'Se apoya en un proyecto residencial de su web.',
+    'ok',
+    [
+      {
+        body: `Buongiorno Davide,\n\nho visto sul vostro sito il progetto residenziale a Milano.\n\n${LOFT.url}\n\nVi capita di affidare le visualizzazioni a studi esterni?\n\nUn cordiale saluto,`,
+        translation: 'Buenos días, Davide:\n\nHe visto en vuestra web el proyecto residencial de Milán.\n\n¿Soléis encargar las visualizaciones a estudios externos?\n\nUn cordial saludo,',
+        project: LOFT,
+      },
+      {
+        body: `Buongiorno Davide,\n\nriprendo il messaggio per aggiungere un lavoro diverso.\n\n${HOUSE.url}\n\nUn cordiale saluto,`,
+        translation: 'Buenos días, Davide:\n\nRetomo el mensaje para añadir un trabajo distinto.\n\nUn cordial saludo,',
+        project: HOUSE,
+      },
+      {
+        body: 'Buongiorno Davide,\n\nquesta è la mia ultima mail. Se in futuro vi servissero immagini, sarò felice di sentirvi.\n\nUn cordiale saluto,',
+        translation: 'Buenos días, Davide:\n\nEste es mi último correo. Si en el futuro necesitáis imágenes, estaré encantado de saber de vosotros.\n\nUn cordial saludo,',
+      },
+    ],
+  );
+  const day = 24 * 3_600_000;
+  example.status = 'active';
+  example.sent = 1;
+  example.pending = false;
+  example.nextSendAt = new Date(Date.now() + 2 * day).toISOString();
+  example.messages[0].status = 'sent';
+  example.messages[0].sentAt = new Date(Date.now() - day).toISOString();
+  example.messages[1].status = 'approved';
+  example.messages[2].status = 'approved';
+  return example;
+}
+
 const wait = () => new Promise((resolve) => setTimeout(resolve, 150));
 
 export function demoApi() {
-  let sequences = sampleSequences();
+  let sequences = [...sampleSequences(), inProgress()];
   const studios = [
     { studio_id: 1, name: 'Estudio Ejemplo Arquitectura', website: 'https://estudioejemplo.es', country: 'ES', city: 'Sevilla', research_status: 'done', sequence_status: 'queued', emails_sent: 0, sent_to: 'marta@estudioejemplo.es', contact_name: 'Marta Ruiz' },
     { studio_id: 2, name: 'Atelier Exemple', website: 'https://atelier-exemple.fr', country: 'FR', city: 'Paris', research_status: 'done', sequence_status: 'queued', emails_sent: 0, sent_to: 'contact@atelier-exemple.fr', contact_name: null },
@@ -114,6 +156,7 @@ export function demoApi() {
       sequences.forEach(refresh);
     },
     async requestNewVersion(enrollmentId) { sequences = sequences.filter((s) => s.enrollmentId !== enrollmentId); },
+    async markReplied(enrollmentId) { sequences = sequences.filter((s) => s.enrollmentId !== enrollmentId); },
     async discard(enrollmentId) { sequences = sequences.filter((s) => s.enrollmentId !== enrollmentId); },
     async listStudios() { await wait(); return structuredClone(studios); },
     async addStudios(websites) {

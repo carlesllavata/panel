@@ -210,6 +210,8 @@ summary { cursor: pointer; color: var(--muted); padding: 6px 0; }
 
 .email { margin: 14px 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .email.approved { border-color: var(--good); }
+.email.sent { background: none; }
+.email.sent .translation { margin: 0; }
 .email header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 10px; }
 .email textarea { border: 0; padding: 0; border-radius: 0; background: none; }
 .email textarea:focus { outline: none; }
